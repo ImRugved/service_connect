@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:service_connect/routes/app_routes.dart';
+import 'package:service_connect/screens/service_provider/model/service_provider_model.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_text_styles.dart';
 import '../../../screens/orders/provider/order_provider.dart';
-import '../provider/service_provider_provider.dart';
+import '../../service_provider/provider/service_provider_provider.dart';
 
 class ServiceProviderDetailScreen extends StatefulWidget {
   final String serviceProviderId;
@@ -481,81 +484,43 @@ class _ServiceProviderDetailScreenState
               ElevatedButton(
                 onPressed: selectedServices.isEmpty
                     ? null
-                    : () async {
-                        try {
-                          Navigator.pop(context); // Close the booking dialog
-                          
-                          // Show loading indicator
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
+                    : () {
+                        // First close the booking dialog
+                        Navigator.pop(context);
 
-                          // Create order
-                          final success = await orderProvider.createOrder(
-                            serviceProviderId: serviceProvider.id,
-                            serviceProviderName: serviceProvider.name,
-                            serviceCategory: serviceProvider.category,
-                            services: selectedServices,
-                            notes: notesController.text.trim(),
-                          );
-                          
-                          // Fetch customer orders to update the list
-                          if (success) {
-                            await orderProvider.fetchCustomerOrders();
-                          }
+                        // Use a simpler approach with a stateful builder
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (BuildContext dialogContext) {
+                            // Start the booking process
+                            _processBooking(
+                              context: dialogContext,
+                              serviceProvider: serviceProvider,
+                              orderProvider: orderProvider,
+                              selectedServices: selectedServices,
+                              notes: notesController.text.trim(),
+                            );
 
-                          // Check if context is still valid before proceeding
-                          if (!context.mounted) return;
-                          
-                          // Close loading indicator
-                          Navigator.pop(context);
-
-                          // Show result
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? 'Booking successful! The service provider will contact you soon.'
-                                    : orderProvider.errorMessage ??
-                                        'Failed to create booking',
-                              ),
-                              backgroundColor:
-                                  success ? AppColors.success : AppColors.error,
-                            ),
-                          );
-                          
-                          // If booking was successful, navigate to customer orders screen
-                          if (success) {
-                            Future.delayed(const Duration(milliseconds: 500), () {
-                              if (context.mounted) {
-                                Navigator.pushReplacementNamed(context, '/customer-orders');
-                              }
-                            });
-                          }
-                        } catch (e) {
-                          // Handle any unexpected errors
-                          if (context.mounted) {
-                            // Make sure we close the loading dialog if it's open
-                            Navigator.of(context).popUntil((route) => route.isFirst);
-                            
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('An error occurred: ${e.toString()}'),
-                                backgroundColor: AppColors.error,
+                            // Return loading dialog
+                            return const AlertDialog(
+                              content: Row(
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(width: 20),
+                                  Text('Creating booking...'),
+                                ],
                               ),
                             );
-                          }
-                        }
+                          },
+                        );
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: AppColors.lightGrey,
-                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
                 ),
                 child: Text('Book', style: AppTextStyles.buttonText),
               ),
@@ -564,6 +529,78 @@ class _ServiceProviderDetailScreenState
         },
       ),
     );
+  }
+
+  // Add this new method to handle the booking process separately
+  Future<void> _processBooking({
+    required BuildContext context,
+    required ServiceProviderModel serviceProvider,
+    required OrderProvider orderProvider,
+    required List<String> selectedServices,
+    required String notes,
+  }) async {
+    try {
+      // Create the order
+      final isSuccess = await orderProvider.createOrder(
+        serviceProviderId: serviceProvider.id,
+        serviceProviderName: serviceProvider.name,
+        serviceCategory: serviceProvider.category,
+        services: selectedServices,
+        notes: notes,
+      );
+
+      // Close the loading dialog
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      // Handle the result
+      if (isSuccess) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Booking successful! The service provider has been notified.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Fetch customer orders
+        await orderProvider.fetchCustomerOrders();
+
+        // Navigate to orders screen
+        Get.offNamed(AppRoutes.customerOrders);
+      } else {
+        // Show error message
+        final errorMessage =
+            orderProvider.errorMessage ?? 'Failed to create booking';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+          ),
+        );
+
+        // Show booking dialog again
+        _showBookingDialog(Get.context!, serviceProvider, orderProvider);
+      }
+    } catch (e) {
+      // Close the loading dialog
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+
+      // Show booking dialog again
+      _showBookingDialog(Get.context!, serviceProvider, orderProvider);
+    }
   }
 
   Widget _buildContactItem({

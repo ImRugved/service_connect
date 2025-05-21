@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_text_styles.dart';
-import '../../home/provider/service_provider_provider.dart';
+import '../../service_provider/provider/service_provider_provider.dart';
 import '../model/order_model.dart';
 import '../provider/order_provider.dart';
 
@@ -14,28 +14,31 @@ class OrdersScreen extends StatefulWidget {
   State<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderStateMixin {
+class _OrdersScreenState extends State<OrdersScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Load orders when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadOrders();
     });
   }
-  
+
   Future<void> _loadOrders() async {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
     await orderProvider.fetchServiceProviderOrders();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -61,20 +64,21 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                       ),
                     )
                   : Switch(
-                      value: provider.isAvailable, // Use the actual availability status from provider
+                      value: provider
+                          .isAvailable, // Use the actual availability status from provider
                       onChanged: (value) async {
                         await provider.toggleAvailability();
                         // Refresh orders after toggling availability
                         await provider.fetchServiceProviderOrders();
-                        
+
                         // Force refresh of service providers in customer screens
                         try {
                           // Get the ServiceProviderProvider and refresh its data
-                          final serviceProviderProvider = Provider.of<ServiceProviderProvider>(
-                            context, 
-                            listen: false
-                          );
-                          await serviceProviderProvider.fetchTopServiceProviders();
+                          final serviceProviderProvider =
+                              Provider.of<ServiceProviderProvider>(context,
+                                  listen: false);
+                          await serviceProviderProvider
+                              .fetchTopServiceProviders();
                         } catch (e) {
                           // If this fails, it's not critical
                           print('Failed to refresh service providers: $e');
@@ -107,9 +111,11 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               child: CircularProgressIndicator(),
             );
           }
-          
+
+          // Use a simpler approach with TabBarView
           return TabBarView(
             controller: _tabController,
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
               // New Orders Tab
               _buildOrdersList(
@@ -117,14 +123,14 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                 (order) => _buildNewOrderCard(context, order, provider),
                 'No new orders',
               ),
-              
+
               // Ongoing Orders Tab
               _buildOrdersList(
                 provider.ongoingOrders,
                 (order) => _buildOngoingOrderCard(context, order, provider),
                 'No ongoing orders',
               ),
-              
+
               // Completed Orders Tab
               _buildOrdersList(
                 provider.completedOrders,
@@ -138,51 +144,59 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
       floatingActionButton: FloatingActionButton(
         onPressed: _loadOrders,
         backgroundColor: AppColors.primaryBlue,
+        tooltip: 'Refresh orders',
         child: const Icon(Icons.refresh),
       ),
     );
   }
-  
+
   Widget _buildOrdersList(
     List<OrderModel> orders,
     Widget Function(OrderModel) cardBuilder,
     String emptyMessage,
   ) {
     if (orders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 64.w,
-              color: AppColors.grey,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              emptyMessage,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.grey,
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.inbox_outlined,
+                    size: 64.w,
+                    color: AppColors.grey,
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    emptyMessage,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.grey,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
-    
-    return RefreshIndicator(
-      onRefresh: _loadOrders,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16.r),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          return cardBuilder(orders[index]);
-        },
-      ),
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.all(16.r),
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        return cardBuilder(orders[index]);
+      },
     );
   }
-  
-  Widget _buildNewOrderCard(BuildContext context, OrderModel order, OrderProvider provider) {
+
+  Widget _buildNewOrderCard(
+      BuildContext context, OrderModel order, OrderProvider provider) {
     return Card(
       margin: EdgeInsets.only(bottom: 16.h),
       elevation: 2,
@@ -228,7 +242,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               ],
             ),
             SizedBox(height: 16.h),
-            
+
             // Services
             Text(
               'Services:',
@@ -251,7 +265,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               }).toList(),
             ),
             SizedBox(height: 16.h),
-            
+
             // Contact info
             _buildOrderInfoItem(
               icon: Icons.phone,
@@ -264,7 +278,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               title: 'Address',
               value: order.address,
             ),
-            
+
             // Notes if any
             if (order.notes.isNotEmpty) ...[
               SizedBox(height: 8.h),
@@ -274,9 +288,9 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                 value: order.notes,
               ),
             ],
-            
+
             SizedBox(height: 16.h),
-            
+
             // Date
             Text(
               'Ordered on: ${_formatDate(order.createdAt)}',
@@ -284,9 +298,9 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                 color: AppColors.grey,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Action button
             SizedBox(
               width: double.infinity,
@@ -314,8 +328,9 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
       ),
     );
   }
-  
-  Widget _buildOngoingOrderCard(BuildContext context, OrderModel order, OrderProvider provider) {
+
+  Widget _buildOngoingOrderCard(
+      BuildContext context, OrderModel order, OrderProvider provider) {
     return Card(
       margin: EdgeInsets.only(bottom: 16.h),
       elevation: 2,
@@ -361,7 +376,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               ],
             ),
             SizedBox(height: 16.h),
-            
+
             // Services
             Text(
               'Services:',
@@ -384,7 +399,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               }).toList(),
             ),
             SizedBox(height: 16.h),
-            
+
             // Contact info
             _buildOrderInfoItem(
               icon: Icons.phone,
@@ -397,7 +412,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               title: 'Address',
               value: order.address,
             ),
-            
+
             // Notes if any
             if (order.notes.isNotEmpty) ...[
               SizedBox(height: 8.h),
@@ -407,9 +422,9 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                 value: order.notes,
               ),
             ],
-            
+
             SizedBox(height: 16.h),
-            
+
             // Dates
             Text(
               'Ordered on: ${_formatDate(order.createdAt)}',
@@ -424,9 +439,9 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                 color: AppColors.grey,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Action button
             SizedBox(
               width: double.infinity,
@@ -454,7 +469,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
       ),
     );
   }
-  
+
   Widget _buildCompletedOrderCard(BuildContext context, OrderModel order) {
     return Card(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -501,7 +516,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               ],
             ),
             SizedBox(height: 16.h),
-            
+
             // Services
             Text(
               'Services:',
@@ -524,7 +539,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               }).toList(),
             ),
             SizedBox(height: 16.h),
-            
+
             // Contact info
             _buildOrderInfoItem(
               icon: Icons.phone,
@@ -537,7 +552,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
               title: 'Address',
               value: order.address,
             ),
-            
+
             // Notes if any
             if (order.notes.isNotEmpty) ...[
               SizedBox(height: 8.h),
@@ -547,9 +562,9 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
                 value: order.notes,
               ),
             ],
-            
+
             SizedBox(height: 16.h),
-            
+
             // Dates
             Text(
               'Ordered on: ${_formatDate(order.createdAt)}',
@@ -576,7 +591,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
       ),
     );
   }
-  
+
   Widget _buildOrderInfoItem({
     required IconData icon,
     required String title,
@@ -611,7 +626,7 @@ class _OrdersScreenState extends State<OrdersScreen> with SingleTickerProviderSt
       ],
     );
   }
-  
+
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }

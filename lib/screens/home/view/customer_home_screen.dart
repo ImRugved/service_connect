@@ -7,8 +7,8 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_text_styles.dart';
 import '../../../routes/app_routes.dart';
 import '../../auth/provider/auth_provider.dart';
-import '../provider/service_provider_provider.dart';
-import '../model/service_provider_model.dart';
+import '../provider/service_provider_provider.dart' as home_provider;
+import '../../home/model/service_provider_model.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -28,10 +28,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       _refreshData();
     });
   }
-  
+
   // Function to refresh all data
   Future<void> _refreshData() async {
-    final provider = Provider.of<ServiceProviderProvider>(context, listen: false);
+    final provider = Provider.of<home_provider.ServiceProviderProvider>(context,
+        listen: false);
     await provider.fetchTopServiceProviders();
     await provider.fetchCategories();
   }
@@ -44,15 +45,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 
   void _searchServiceProviders(String query) {
-    Provider.of<ServiceProviderProvider>(context, listen: false)
+    Provider.of<home_provider.ServiceProviderProvider>(context, listen: false)
         .searchServiceProviders(query);
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final serviceProviderProvider =
-        Provider.of<ServiceProviderProvider>(context);
+    final homeProvider =
+        Provider.of<home_provider.ServiceProviderProvider>(context);
     final userName = authProvider.userModel?.name.split(' ').first ?? 'User';
 
     return Scaffold(
@@ -74,7 +75,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               _searchFocusNode.unfocus();
               Get.toNamed(AppRoutes.favorites)!.then((_) {
                 // Refresh data when returning from favorites
-                Provider.of<ServiceProviderProvider>(context, listen: false)
+                Provider.of<home_provider.ServiceProviderProvider>(context,
+                        listen: false)
                     .fetchTopServiceProviders();
               });
             },
@@ -90,12 +92,12 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshData,
-          color: AppColors.primaryBlue,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
+          child: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: AppColors.primaryBlue,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Welcome section
@@ -166,23 +168,106 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ),
               ),
 
+              // Categories and Orders navigation buttons
+              Padding(
+                padding: EdgeInsets.all(16.r),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Get.toNamed(AppRoutes.categories);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.category, color: AppColors.white),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'Categories',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Get.toNamed(AppRoutes.customerOrders);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryLightBlue,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.receipt_long,
+                                color: AppColors.primaryBlue),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'My Orders',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.primaryBlue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Featured Categories section
+              Padding(
+                padding: EdgeInsets.all(16.r),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Featured Categories',
+                      style: AppTextStyles.heading3,
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Get.toNamed(AppRoutes.categories);
+                      },
+                      child: Text(
+                        'View All',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildCategoriesSection(homeProvider),
+
               // Search results
               if (_searchController.text.isNotEmpty)
-                _buildSearchResults(serviceProviderProvider)
+                _buildSearchResults(homeProvider)
               else
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Categories section
-                    Padding(
-                      padding: EdgeInsets.all(16.r),
-                      child: Text(
-                        'Categories',
-                        style: AppTextStyles.heading3,
-                      ),
-                    ),
-                    _buildCategoriesSection(serviceProviderProvider),
-
                     // Top service providers section
                     Padding(
                       padding: EdgeInsets.all(16.r),
@@ -191,7 +276,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         style: AppTextStyles.heading3,
                       ),
                     ),
-                    _buildTopServiceProvidersSection(serviceProviderProvider),
+                    _buildTopServiceProvidersSection(homeProvider),
                   ],
                 ),
             ],
@@ -201,7 +286,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  Widget _buildSearchResults(ServiceProviderProvider provider) {
+  Widget _buildSearchResults(home_provider.ServiceProviderProvider provider) {
     if (provider.isSearching) {
       return _buildSearchShimmer();
     }
@@ -267,9 +352,46 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  Widget _buildCategoriesSection(ServiceProviderProvider provider) {
+  Widget _buildCategoriesSection(
+      home_provider.ServiceProviderProvider provider) {
+    // Fixed list of categories that should always be shown
+    final List<String> fixedCategories = [
+      'Cleaning',
+      'Plumbing',
+      'Electrical',
+      'Carpentry',
+      'Painting',
+      'Gardening',
+      'Moving',
+      'Beauty',
+      'Other'
+    ];
+
+    // Combine fixed categories with any from the provider
+    final Set<String> allCategories = {...fixedCategories};
+    if (!provider.isLoading && provider.categories.isNotEmpty) {
+      allCategories.addAll(provider.categories);
+    }
+
+    // Convert back to list for display
+    final List<String> displayCategories = allCategories.toList();
+
     if (provider.isLoading) {
       return _buildCategoriesShimmer();
+    }
+
+    if (displayCategories.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
+        child: Center(
+          child: Text(
+            'No categories available',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.grey,
+            ),
+          ),
+        ),
+      );
     }
 
     return SizedBox(
@@ -277,10 +399,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: provider.categories.length,
+        itemCount: displayCategories.length,
         itemBuilder: (context, index) {
-          final category = provider.categories[index];
-          return _buildCategoryCard(category);
+          return _buildCategoryCard(displayCategories[index]);
         },
       ),
     );
@@ -402,7 +523,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  Widget _buildTopServiceProvidersSection(ServiceProviderProvider provider) {
+  Widget _buildTopServiceProvidersSection(
+      home_provider.ServiceProviderProvider provider) {
     if (provider.isLoading) {
       return _buildServiceProvidersShimmer();
     }

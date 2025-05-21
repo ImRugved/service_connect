@@ -13,25 +13,26 @@ class CustomerOrdersScreen extends StatefulWidget {
   State<CustomerOrdersScreen> createState() => _CustomerOrdersScreenState();
 }
 
-class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with SingleTickerProviderStateMixin {
+class _CustomerOrdersScreenState extends State<CustomerOrdersScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Load orders when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadOrders();
     });
   }
-  
+
   Future<void> _loadOrders() async {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
     await orderProvider.fetchCustomerOrders();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -62,31 +63,35 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               child: CircularProgressIndicator(),
             );
           }
-          
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              // New Orders Tab
-              _buildOrdersList(
-                provider.newOrders,
-                (order) => _buildNewOrderCard(context, order),
-                'No new bookings',
-              ),
-              
-              // Ongoing Orders Tab
-              _buildOrdersList(
-                provider.ongoingOrders,
-                (order) => _buildOngoingOrderCard(context, order),
-                'No ongoing bookings',
-              ),
-              
-              // Completed Orders Tab
-              _buildOrdersList(
-                provider.completedOrders,
-                (order) => _buildCompletedOrderCard(context, order),
-                'No completed bookings',
-              ),
-            ],
+
+          return RefreshIndicator(
+            onRefresh: _loadOrders,
+            color: AppColors.primaryBlue,
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // New Orders Tab
+                _buildOrdersList(
+                  provider.newOrders,
+                  (order) => _buildNewOrderCard(context, order),
+                  'No new bookings',
+                ),
+
+                // Ongoing Orders Tab
+                _buildOrdersList(
+                  provider.ongoingOrders,
+                  (order) => _buildOngoingOrderCard(context, order),
+                  'No ongoing bookings',
+                ),
+
+                // Completed Orders Tab
+                _buildOrdersList(
+                  provider.completedOrders,
+                  (order) => _buildCompletedOrderCard(context, order),
+                  'No completed bookings',
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -97,46 +102,54 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
       ),
     );
   }
-  
+
   Widget _buildOrdersList(
     List<OrderModel> orders,
     Widget Function(OrderModel) cardBuilder,
     String emptyMessage,
   ) {
-    if (orders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 64.w,
-              color: AppColors.grey,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              emptyMessage,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.grey,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
     return RefreshIndicator(
       onRefresh: _loadOrders,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16.r),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          return cardBuilder(orders[index]);
-        },
-      ),
+      color: AppColors.primaryBlue,
+      child: orders.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64.w,
+                          color: AppColors.grey,
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          emptyMessage,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(16.r),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                return cardBuilder(orders[index]);
+              },
+            ),
     );
   }
-  
+
   Widget _buildNewOrderCard(BuildContext context, OrderModel order) {
     return Card(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -190,7 +203,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               ),
             ),
             SizedBox(height: 16.h),
-            
+
             // Services
             Text(
               'Services:',
@@ -213,7 +226,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               }).toList(),
             ),
             SizedBox(height: 16.h),
-            
+
             // Notes if any
             if (order.notes.isNotEmpty) ...[
               Text(
@@ -229,7 +242,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               ),
               SizedBox(height: 16.h),
             ],
-            
+
             // Date
             Text(
               'Booked on: ${_formatDate(order.createdAt)}',
@@ -237,9 +250,9 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
                 color: AppColors.grey,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Status message
             Container(
               width: double.infinity,
@@ -261,7 +274,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
       ),
     );
   }
-  
+
   Widget _buildOngoingOrderCard(BuildContext context, OrderModel order) {
     return Card(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -315,7 +328,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               ),
             ),
             SizedBox(height: 16.h),
-            
+
             // Services
             Text(
               'Services:',
@@ -338,7 +351,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               }).toList(),
             ),
             SizedBox(height: 16.h),
-            
+
             // Notes if any
             if (order.notes.isNotEmpty) ...[
               Text(
@@ -354,7 +367,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               ),
               SizedBox(height: 16.h),
             ],
-            
+
             // Dates
             Text(
               'Booked on: ${_formatDate(order.createdAt)}',
@@ -369,9 +382,9 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
                 color: AppColors.grey,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Status message
             Container(
               width: double.infinity,
@@ -388,9 +401,9 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
                 textAlign: TextAlign.center,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Contact button
             SizedBox(
               width: double.infinity,
@@ -412,7 +425,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
       ),
     );
   }
-  
+
   Widget _buildCompletedOrderCard(BuildContext context, OrderModel order) {
     return Card(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -466,7 +479,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               ),
             ),
             SizedBox(height: 16.h),
-            
+
             // Services
             Text(
               'Services:',
@@ -489,7 +502,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               }).toList(),
             ),
             SizedBox(height: 16.h),
-            
+
             // Notes if any
             if (order.notes.isNotEmpty) ...[
               Text(
@@ -505,7 +518,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
               ),
               SizedBox(height: 16.h),
             ],
-            
+
             // Dates
             Text(
               'Booked on: ${_formatDate(order.createdAt)}',
@@ -527,9 +540,9 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
                 color: AppColors.grey,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Status message
             Container(
               width: double.infinity,
@@ -546,9 +559,9 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
                 textAlign: TextAlign.center,
               ),
             ),
-            
+
             SizedBox(height: 16.h),
-            
+
             // Book again button
             SizedBox(
               width: double.infinity,
@@ -569,7 +582,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> with Single
       ),
     );
   }
-  
+
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }

@@ -9,7 +9,9 @@ import 'package:service_connect/routes/app_routes.dart';
 import 'package:service_connect/screens/auth/provider/auth_provider.dart';
 import 'package:service_connect/screens/auth/provider/login_provider.dart';
 import 'package:service_connect/screens/auth/provider/signup_provider.dart';
-import 'package:service_connect/screens/home/provider/service_provider_provider.dart';
+import 'package:service_connect/screens/service_provider/provider/service_provider_provider.dart';
+import 'package:service_connect/screens/home/provider/service_provider_provider.dart'
+    as home_provider;
 import 'package:service_connect/screens/orders/provider/order_provider.dart';
 import 'package:service_connect/screens/profile/provider/profile_provider.dart';
 
@@ -35,6 +37,8 @@ class MyApp extends StatelessWidget {
           providers: [
             ChangeNotifierProvider(create: (_) => AuthProvider()),
             ChangeNotifierProvider(create: (_) => ServiceProviderProvider()),
+            ChangeNotifierProvider(
+                create: (_) => home_provider.ServiceProviderProvider()),
             ChangeNotifierProvider(create: (_) => LoginProvider()),
             ChangeNotifierProvider(create: (_) => SignupProvider()),
             ChangeNotifierProvider(create: (_) => ProfileProvider()),

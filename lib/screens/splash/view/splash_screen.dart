@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_text_styles.dart';
 import '../../../utils/session_manager.dart';
@@ -58,19 +59,13 @@ class _SplashScreenState extends State<SplashScreen>
       final userType = await SessionManager.getUserType();
 
       if (userType == 'service_provider') {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ServiceProviderHomeScreen()),
-        );
+        Get.offAllNamed('/service-provider-home');
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const CustomerHomeScreen()),
-        );
+        Get.offAllNamed('/customer-home');
       }
     } else {
       // User is not logged in
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      Get.offAllNamed('/login');
     }
   }
 
