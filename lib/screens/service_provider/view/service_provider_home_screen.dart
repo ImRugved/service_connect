@@ -32,6 +32,10 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
 
+      // Set up order provider to listen for new orders
+      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      orderProvider.fetchServiceProviderOrders();
+
       // Debug: Print current user ID
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       // print('Current user ID: ${authProvider.userModel?.id}');
@@ -295,24 +299,24 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
                                           ),
                                         ),
                                         SizedBox(height: 8.h),
-                                        // ElevatedButton(
-                                        //   onPressed: _refreshData,
-                                        //   style: ElevatedButton.styleFrom(
-                                        //     backgroundColor:
-                                        //         AppColors.primaryBlue,
-                                        //     padding: EdgeInsets.symmetric(
-                                        //       horizontal: 16.w,
-                                        //       vertical: 8.h,
-                                        //     ),
-                                        //   ),
-                                        //   child: Text(
-                                        //     'Refresh',
-                                        //     style: AppTextStyles.bodySmall
-                                        //         .copyWith(
-                                        //       color: AppColors.white,
-                                        //     ),
-                                        //   ),
-                                        // ),
+                                        ElevatedButton(
+                                          onPressed: _refreshData,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                AppColors.primaryBlue,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 16.w,
+                                              vertical: 8.h,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Refresh',
+                                            style: AppTextStyles.bodySmall
+                                                .copyWith(
+                                              color: AppColors.white,
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   )
@@ -428,12 +432,12 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
                 ],
               ),
             ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _refreshData,
-      //   backgroundColor: AppColors.primaryBlue,
-      //   tooltip: 'Refresh orders',
-      //   child: const Icon(Icons.refresh),
-      // ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _refreshData,
+        backgroundColor: AppColors.primaryBlue,
+        tooltip: 'Refresh orders',
+        child: const Icon(Icons.refresh),
+      ),
     );
   }
 

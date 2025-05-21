@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -311,45 +312,159 @@ class ServiceProviderProvider extends ChangeNotifier {
     }
   }
 
+  // Stream subscription for real-time availability updates
+  StreamSubscription<DocumentSnapshot>? _availabilitySubscription;
+
   Future<void> _loadAvailabilityStatus() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      final docSnapshot =
-          await _firestore.collection('users').doc(user.uid).get();
-
-      if (!docSnapshot.exists) return;
-
-      final data = docSnapshot.data()!;
-      if (data['role'] == 'serviceProvider' &&
-          data.containsKey('serviceProviderDetails')) {
-        _isAvailable = data['serviceProviderDetails']['isAvailable'] ?? true;
-        notifyListeners();
-      }
+      // Cancel any existing subscription
+      await _availabilitySubscription?.cancel();
+      
+      // Set up a real-time listener for availability changes
+      _availabilitySubscription = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (!docSnapshot.exists) return;
+        
+        final data = docSnapshot.data()!;
+        if (data['role'] == 'serviceProvider' &&
+            data.containsKey('serviceProviderDetails')) {
+          _isAvailable = data['serviceProviderDetails']['isAvailable'] ?? true;
+          print('Availability status updated in real-time: $_isAvailable');
+          notifyListeners();
+        }
+      }, onError: (e) {
+        print('Error in availability listener: $e');
+      });
     } catch (e) {
-      print('Error loading availability status: $e');
+      print('Error setting up availability status listener: $e');
     }
   }
 
-  Future<void> toggleAvailability() async {
+  // Method to toggle service provider availability
+  Future<bool> toggleAvailability() async {
+    // Store the original value in case we need to revert
+    final originalValue = _isAvailable;
+    
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      // Toggle the state locally first for immediate UI update
+      // Toggle availability immediately for UI update without showing loading indicator
       _isAvailable = !_isAvailable;
-      notifyListeners();
-
+      notifyListeners(); // Update UI immediately
+      
+      // Get current user
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        // Revert if no user found
+        _isAvailable = originalValue;
+        notifyListeners();
+        _setError('User not authenticated');
+        return false;
+      }
+      
       // Update in Firestore
       await _firestore.collection('users').doc(user.uid).update({
         'serviceProviderDetails.isAvailable': _isAvailable,
       });
+      
+      // Force update all service providers to ensure real-time updates
+      await _updateServiceProviderInAllLists(user.uid);
+
+      print('Availability toggled to: $_isAvailable');
+      return true;
     } catch (e) {
-      // Revert if failed
-      _isAvailable = !_isAvailable;
+      // Revert the availability status if the update fails
+      _isAvailable = originalValue;
       notifyListeners();
+      
+      print('Error toggling availability: $e');
       _setError('Failed to update availability: $e');
+      return false;
+    }
+  }
+  
+  // Method to update a service provider in all lists when their availability changes
+  Future<void> _updateServiceProviderInAllLists(String serviceProviderId) async {
+    try {
+      // Fetch the updated service provider data
+      final docSnapshot = await _firestore.collection('users').doc(serviceProviderId).get();
+      
+      if (!docSnapshot.exists) return;
+      
+      final data = docSnapshot.data()!;
+      data['id'] = serviceProviderId;
+      final updatedProvider = ServiceProviderModel.fromJson(data);
+      
+      // Update in all lists
+      bool updated = false;
+      
+      // Update in service providers list
+      for (int i = 0; i < _serviceProviders.length; i++) {
+        if (_serviceProviders[i].id == serviceProviderId) {
+          _serviceProviders[i] = updatedProvider;
+          updated = true;
+        }
+      }
+      
+      // Update in top service providers list
+      for (int i = 0; i < _topServiceProviders.length; i++) {
+        if (_topServiceProviders[i].id == serviceProviderId) {
+          _topServiceProviders[i] = updatedProvider;
+          updated = true;
+        }
+      }
+      
+      // Update in search results
+      for (int i = 0; i < _searchResults.length; i++) {
+        if (_searchResults[i].id == serviceProviderId) {
+          _searchResults[i] = updatedProvider;
+          updated = true;
+        }
+      }
+      
+      // Update in favorite service providers
+      for (int i = 0; i < _favoriteServiceProviders.length; i++) {
+        if (_favoriteServiceProviders[i].id == serviceProviderId) {
+          _favoriteServiceProviders[i] = updatedProvider;
+          updated = true;
+        }
+      }
+      
+      // Update current service provider if it's the same one
+      if (_currentServiceProvider?.id == serviceProviderId) {
+        _currentServiceProvider = updatedProvider;
+        updated = true;
+      }
+      
+      // Notify listeners if any updates were made
+      if (updated) {
+        print('Service provider $serviceProviderId updated in all lists');
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error updating service provider in lists: $e');
+    }
+  }
+
+  // Method to refresh all data
+  Future<void> refreshData() async {
+    try {
+      // Refresh all relevant data
+      await Future.wait([
+        fetchCategories(),
+        fetchTopServiceProviders(),
+        fetchFavoriteServiceProviders(),
+        _loadAvailabilityStatus(),
+      ]);
+
+      print('Service provider data refreshed successfully');
+    } catch (e) {
+      print('Error refreshing data: $e');
+      _setError('Failed to refresh data: $e');
     }
   }
 
@@ -389,18 +504,18 @@ class ServiceProviderProvider extends ChangeNotifier {
   }
 
   /// Refreshes all data for the service provider
-  Future<void> refreshData() async {
-    try {
-      await fetchCategories();
-      await fetchTopServiceProviders();
-      await fetchFavoriteServiceProviders();
-      await _loadAvailabilityStatus();
-      notifyListeners();
-    } catch (e) {
-      _setError('Failed to refresh data: $e');
-      rethrow;
-    }
-  }
+  // Future<void> refreshData() async {
+  //   try {
+  //     await fetchCategories();
+  //     await fetchTopServiceProviders();
+  //     await fetchFavoriteServiceProviders();
+  //     await _loadAvailabilityStatus();
+  //     notifyListeners();
+  //   } catch (e) {
+  //     _setError('Failed to refresh data: $e');
+  //     rethrow;
+  //   }
+  // }
 
   // Method to check if a service provider is in favorites
   Future<bool> isFavorite(String serviceProviderId) async {
@@ -429,11 +544,72 @@ class ServiceProviderProvider extends ChangeNotifier {
     }
   }
 
-  // Method to load service provider details
+  // Method to toggle service provider availability
+  // Future<bool> toggleAvailability() async {
+  //   try {
+  //     _setLoading(true);
+
+  //     // Get current user
+  //     final user = FirebaseAuth.instance.currentUser;
+  //     if (user == null) {
+  //       _setError('User not authenticated');
+  //       return false;
+  //     }
+
+  //     // Toggle availability
+  //     _isAvailable = !_isAvailable;
+
+  //     // Update in Firestore - use the correct field path
+  //     await _firestore
+  //         .collection('users')
+  //         .doc(user.uid)
+  //         .update({
+  //       'serviceProviderDetails.isAvailable': _isAvailable,
+  //     });
+
+  //     print('Availability toggled to: $_isAvailable');
+  //     notifyListeners();
+  //     _setLoading(false);
+  //     return true;
+  //   } catch (e) {
+  //     print('Error toggling availability: $e');
+  //     _setError('Failed to update availability: $e');
+  //     return false;
+  //   }
+  // }
+
+  // Map to store availability listeners for different service providers
+  final Map<String, StreamSubscription<DocumentSnapshot>> _providerAvailabilityListeners = {};
+
+  // Method to load service provider details with real-time availability updates
   Future<void> loadServiceProviderDetails(String id) async {
     try {
       _setDetailLoading(true);
 
+      // Cancel any existing listener for this provider
+      await _providerAvailabilityListeners[id]?.cancel();
+      
+      // Set up a real-time listener for this service provider
+      _providerAvailabilityListeners[id] = _firestore
+          .collection('users')
+          .doc(id)
+          .snapshots()
+          .listen((docSnapshot) {
+        if (!docSnapshot.exists) {
+          _currentServiceProvider = null;
+          return;
+        }
+        
+        final data = docSnapshot.data()!;
+        data['id'] = docSnapshot.id;
+        _currentServiceProvider = ServiceProviderModel.fromJson(data);
+        print('Service provider details updated in real-time: ${_currentServiceProvider?.name}');
+        notifyListeners();
+      }, onError: (e) {
+        print('Error in service provider listener: $e');
+      });
+      
+      // Initial load
       final docSnapshot = await _firestore.collection('users').doc(id).get();
 
       if (!docSnapshot.exists) {

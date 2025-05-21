@@ -43,6 +43,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppColors.white,
         title: const Text('My Bookings'),
         bottom: TabBar(
           controller: _tabController,
@@ -98,7 +99,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: _loadOrders,
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.refresh),
+        child: Icon(Icons.refresh, color: AppColors.white),
       ),
     );
   }
@@ -569,8 +570,14 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen>
                 onPressed: () {
                   // Navigate to service provider detail screen
                 },
-                icon: const Icon(Icons.repeat),
-                label: const Text('Book Again'),
+                icon: const Icon(
+                  Icons.repeat,
+                  color: AppColors.white,
+                ),
+                label: const Text('Book Again',
+                    style: TextStyle(
+                      color: AppColors.white,
+                    )),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
                   padding: EdgeInsets.symmetric(vertical: 12.h),

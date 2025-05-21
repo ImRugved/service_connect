@@ -320,7 +320,10 @@ class _OrdersScreenState extends State<OrdersScreen>
                   backgroundColor: AppColors.primaryBlue,
                   padding: EdgeInsets.symmetric(vertical: 12.h),
                 ),
-                child: const Text('Start Order'),
+                child: Text('Start Order',
+                    style: TextStyle(
+                      color: AppColors.white,
+                    )),
               ),
             ),
           ],
@@ -461,7 +464,10 @@ class _OrdersScreenState extends State<OrdersScreen>
                   backgroundColor: AppColors.success,
                   padding: EdgeInsets.symmetric(vertical: 12.h),
                 ),
-                child: const Text('Complete Order'),
+                child: const Text('Complete Order',
+                    style: TextStyle(
+                      color: AppColors.white,
+                    )),
               ),
             ),
           ],
