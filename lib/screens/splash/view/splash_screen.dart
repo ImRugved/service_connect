@@ -79,28 +79,38 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App logo
-              Container(
-                width: 120.w,
-                height: 120.w,
-                decoration: BoxDecoration(
+              // App name text
+              Text(
+                'Service Connect',
+                style: AppTextStyles.heading1.copyWith(
                   color: AppColors.primaryBlue,
-                  borderRadius: BorderRadius.circular(20.r),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 32.sp,
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.handyman,
-                    color: AppColors.white,
-                    size: 60.w,
+              ),
+              SizedBox(height: 24.h),
+
+              // Circular logo with clean implementation
+              ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(100.w), // Half of width/height
+                child: Container(
+                  width: 200.w,
+                  height: 200.w,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover, // Important for proper circular cropping
                   ),
                 ),
               ),
+
               SizedBox(height: 48.h),
               SizedBox(
                 width: 40.w,
                 height: 40.w,
-                child: const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                child: CircularProgressIndicator(
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
                   strokeWidth: 3,
                 ),
               ),

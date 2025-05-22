@@ -18,6 +18,8 @@ class _OrdersScreenState extends State<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -39,6 +41,8 @@ class _OrdersScreenState extends State<OrdersScreen>
   void dispose() {
     _tabController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -47,51 +51,51 @@ class _OrdersScreenState extends State<OrdersScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Orders'),
-        actions: [
-          // Availability toggle
-          Consumer<OrderProvider>(
-            builder: (context, provider, child) {
-              return provider.isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  : Switch(
-                      value: provider
-                          .isAvailable, // Use the actual availability status from provider
-                      onChanged: (value) async {
-                        await provider.toggleAvailability();
-                        // Refresh orders after toggling availability
-                        await provider.fetchServiceProviderOrders();
+        // actions: [
+        //   // Availability toggle
+        //   Consumer<OrderProvider>(
+        //     builder: (context, provider, child) {
+        //       return provider.isLoading
+        //           ? const Padding(
+        //               padding: EdgeInsets.all(8.0),
+        //               child: SizedBox(
+        //                 width: 24,
+        //                 height: 24,
+        //                 child: CircularProgressIndicator(
+        //                   strokeWidth: 2,
+        //                   color: Colors.white,
+        //                 ),
+        //               ),
+        //             )
+        //           : Switch(
+        //               value: provider
+        //                   .isAvailable, // Use the actual availability status from provider
+        //               onChanged: (value) async {
+        //                 await provider.toggleAvailability();
+        //                 // Refresh orders after toggling availability
+        //                 await provider.fetchServiceProviderOrders();
 
-                        // Force refresh of service providers in customer screens
-                        try {
-                          // Get the ServiceProviderProvider and refresh its data
-                          final serviceProviderProvider =
-                              Provider.of<ServiceProviderProvider>(context,
-                                  listen: false);
-                          await serviceProviderProvider
-                              .fetchTopServiceProviders();
-                        } catch (e) {
-                          // If this fails, it's not critical
-                          print('Failed to refresh service providers: $e');
-                        }
-                      },
-                      activeColor: AppColors.success,
-                      activeTrackColor: AppColors.success.withOpacity(0.5),
-                      inactiveThumbColor: AppColors.error,
-                      inactiveTrackColor: AppColors.error.withOpacity(0.5),
-                    );
-            },
-          ),
-        ],
+        //                 // Force refresh of service providers in customer screens
+        //                 try {
+        //                   // Get the ServiceProviderProvider and refresh its data
+        //                   final serviceProviderProvider =
+        //                       Provider.of<ServiceProviderProvider>(context,
+        //                           listen: false);
+        //                   await serviceProviderProvider
+        //                       .fetchTopServiceProviders();
+        //                 } catch (e) {
+        //                   // If this fails, it's not critical
+        //                   print('Failed to refresh service providers: $e');
+        //                 }
+        //               },
+        //               activeColor: AppColors.success,
+        //               activeTrackColor: AppColors.success.withOpacity(0.5),
+        //               inactiveThumbColor: AppColors.error,
+        //               inactiveTrackColor: AppColors.error.withOpacity(0.5),
+        //             );
+        //     },
+        //   ),
+        // ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -118,10 +122,73 @@ class _OrdersScreenState extends State<OrdersScreen>
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               // New Orders Tab
-              _buildOrdersList(
-                provider.newOrders,
-                (order) => _buildNewOrderCard(context, order, provider),
-                'No new orders',
+              Column(
+                children: [
+                  // Search bar for new orders
+                  Padding(
+                    padding: EdgeInsets.all(16.r),
+                    child: TextField(
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      decoration: InputDecoration(
+                        hintText: 'Search by customer name or service',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: provider.searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  provider.clearSearch();
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: BorderSide(color: AppColors.grey),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: BorderSide(color: AppColors.grey),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: BorderSide(color: AppColors.primaryBlue),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 12.h,
+                        ),
+                      ),
+                      onChanged: (value) {
+                        provider.searchOrders(value);
+                      },
+                    ),
+                  ),
+                  // Search results count
+                  if (provider.searchQuery.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.r),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Found ${provider.newOrders.length} results',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Orders list
+                  Expanded(
+                    child: _buildOrdersList(
+                      provider.newOrders,
+                      (order) => _buildNewOrderCard(context, order, provider),
+                      provider.searchQuery.isNotEmpty
+                          ? 'No orders match your search'
+                          : 'No new orders',
+                    ),
+                  ),
+                ],
               ),
 
               // Ongoing Orders Tab

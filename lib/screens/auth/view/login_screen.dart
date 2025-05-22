@@ -30,15 +30,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       final success = await authProvider.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      
+
       if (success && mounted) {
         final userModel = authProvider.userModel;
-        
+
         if (userModel != null) {
           if (userModel.userType == 'service_provider') {
             Get.offAllNamed(AppRoutes.serviceProviderHome);
@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
@@ -66,35 +66,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: 60.h),
-                  
+
                   // Logo
                   Center(
-                    child: Container(
-                      width: 100.w,
-                      height: 100.w,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLightBlue,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.handyman,
-                        size: 50.w,
-                        color: AppColors.white,
+                    child: ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(100.w), // Half of width/height
+                      child: Container(
+                        width: 150.w,
+                        height: 150.w,
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit
+                              .cover, // Important for proper circular cropping
+                        ),
                       ),
                     ),
                   ),
-                  
+
                   SizedBox(height: 24.h),
-                  
+
                   // Title
                   Text(
                     'Welcome Back',
                     style: AppTextStyles.heading1,
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   SizedBox(height: 8.h),
-                  
+
                   // Subtitle
                   Text(
                     'Sign in to continue',
@@ -103,9 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   SizedBox(height: 48.h),
-                  
+
                   // Email field
                   TextFormField(
                     controller: _emailController,
@@ -119,38 +119,42 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
-                        borderSide: const BorderSide(color: AppColors.lightGrey),
+                        borderSide:
+                            const BorderSide(color: AppColors.lightGrey),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
-                        borderSide: const BorderSide(color: AppColors.primaryBlue),
+                        borderSide:
+                            const BorderSide(color: AppColors.primaryBlue),
                       ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your email';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          .hasMatch(value)) {
                         return 'Please enter a valid email';
                       }
                       return null;
                     },
                   ),
-                  
+
                   SizedBox(height: 16.h),
-                  
+
                   // Password field
                   TextFormField(
                     controller: _passwordController,
-                    obscureText: Provider.of<LoginProvider>(context).obscurePassword,
+                    obscureText:
+                        Provider.of<LoginProvider>(context).obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       hintText: 'Enter your password',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          Provider.of<LoginProvider>(context).obscurePassword 
-                              ? Icons.visibility_off 
+                          Provider.of<LoginProvider>(context).obscurePassword
+                              ? Icons.visibility_off
                               : Icons.visibility,
                         ),
                         onPressed: () {
@@ -163,11 +167,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
-                        borderSide: const BorderSide(color: AppColors.lightGrey),
+                        borderSide:
+                            const BorderSide(color: AppColors.lightGrey),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
-                        borderSide: const BorderSide(color: AppColors.primaryBlue),
+                        borderSide:
+                            const BorderSide(color: AppColors.primaryBlue),
                       ),
                     ),
                     validator: (value) {
@@ -180,9 +186,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  
+
                   SizedBox(height: 8.h),
-                  
+
                   // Forgot password
                   Align(
                     alignment: Alignment.centerRight,
@@ -198,9 +204,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  
+
                   SizedBox(height: 24.h),
-                  
+
                   // Error message
                   if (authProvider.errorMessage != null)
                     Container(
@@ -217,9 +223,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  
+
                   SizedBox(height: 24.h),
-                  
+
                   // Login button
                   ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _login,
@@ -237,7 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: 24.w,
                             height: 24.w,
                             child: const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.white),
                               strokeWidth: 2,
                             ),
                           )
@@ -246,9 +253,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: AppTextStyles.buttonText,
                           ),
                   ),
-                  
+
                   SizedBox(height: 24.h),
-                  
+
                   // Sign up link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -271,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  
+
                   SizedBox(height: 24.h),
                 ],
               ),

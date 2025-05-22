@@ -22,6 +22,8 @@ class ServiceProviderHomeScreen extends StatefulWidget {
 class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -85,6 +87,8 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -282,6 +286,64 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
                               ),
                             ),
                             SizedBox(height: 8.h),
+                            
+                            // Search bar for orders
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocusNode,
+                                decoration: InputDecoration(
+                                  hintText: 'Search by customer name or service',
+                                  hintStyle: AppTextStyles.bodySmall.copyWith(color: AppColors.grey),
+                                  prefixIcon: const Icon(Icons.search, size: 20),
+                                  suffixIcon: orderProvider.searchQuery.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear, size: 20),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            orderProvider.clearSearch();
+                                          },
+                                        )
+                                      : null,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    borderSide: BorderSide(color: AppColors.grey.withOpacity(0.5)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    borderSide: BorderSide(color: AppColors.grey.withOpacity(0.5)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                    borderSide: BorderSide(color: AppColors.primaryBlue),
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 12.w,
+                                    vertical: 8.h,
+                                  ),
+                                  isDense: true,
+                                ),
+                                style: AppTextStyles.bodySmall,
+                                onChanged: (value) {
+                                  orderProvider.searchOrders(value);
+                                },
+                              ),
+                            ),
+                            
+                            // Search results count
+                            if (orderProvider.searchQuery.isNotEmpty)
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                                child: Text(
+                                  'Found ${orderProvider.newOrders.length} results',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.grey,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            SizedBox(height: 8.h),
 
                             // Orders list
                             orderProvider.newOrders.isEmpty
@@ -440,55 +502,55 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _refreshData,
-        backgroundColor: AppColors.primaryBlue,
-        tooltip: 'Refresh orders',
-        child: const Icon(Icons.refresh),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _refreshData,
+      //   backgroundColor: AppColors.primaryBlue,
+      //   tooltip: 'Refresh orders',
+      //   child: const Icon(Icons.refresh, color: AppColors.white),
+      // ),
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.all(12.r),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
-              color: color,
-              size: 24.r,
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              value,
-              style: AppTextStyles.heading3.copyWith(
-                color: color,
-              ),
-            ),
-            SizedBox(height: 4.h),
-            Text(
-              title,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildStatCard({
+  //   required IconData icon,
+  //   required String title,
+  //   required String value,
+  //   required Color color,
+  // }) {
+  //   return Expanded(
+  //     child: Container(
+  //       padding: EdgeInsets.all(12.r),
+  //       decoration: BoxDecoration(
+  //         color: color.withOpacity(0.1),
+  //         borderRadius: BorderRadius.circular(12.r),
+  //       ),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Icon(
+  //             icon,
+  //             color: color,
+  //             size: 24.r,
+  //           ),
+  //           SizedBox(height: 8.h),
+  //           Text(
+  //             value,
+  //             style: AppTextStyles.heading3.copyWith(
+  //               color: color,
+  //             ),
+  //           ),
+  //           SizedBox(height: 4.h),
+  //           Text(
+  //             title,
+  //             style: AppTextStyles.bodySmall.copyWith(
+  //               color: AppColors.grey,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildActionButton({
     required IconData icon,

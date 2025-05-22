@@ -17,14 +17,19 @@ class OrderProvider extends ChangeNotifier {
   List<OrderModel> _newOrders = [];
   List<OrderModel> _ongoingOrders = [];
   List<OrderModel> _completedOrders = [];
+  
+  // Search functionality
+  String _searchQuery = '';
+  List<OrderModel> _filteredNewOrders = [];
 
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAvailable => _isAvailable;
-  List<OrderModel> get newOrders => _newOrders;
+  List<OrderModel> get newOrders => _searchQuery.isEmpty ? _newOrders : _filteredNewOrders;
   List<OrderModel> get ongoingOrders => _ongoingOrders;
   List<OrderModel> get completedOrders => _completedOrders;
+  String get searchQuery => _searchQuery;
 
   OrderProvider() {
     // Check availability status on initialization
@@ -496,6 +501,32 @@ class OrderProvider extends ChangeNotifier {
   void _setError(String message) {
     _errorMessage = message;
     _isLoading = false;
+    notifyListeners();
+  }
+  
+  // Search orders by customer name or service
+  void searchOrders(String query) {
+    _searchQuery = query.toLowerCase().trim();
+    
+    if (_searchQuery.isEmpty) {
+      _filteredNewOrders = [];
+    } else {
+      _filteredNewOrders = _newOrders.where((order) {
+        final customerNameMatch = order.customerName.toLowerCase().contains(_searchQuery);
+        final servicesMatch = order.services.any((service) => service.toLowerCase().contains(_searchQuery));
+        final categoryMatch = order.serviceCategory.toLowerCase().contains(_searchQuery);
+        
+        return customerNameMatch || servicesMatch || categoryMatch;
+      }).toList();
+    }
+    
+    notifyListeners();
+  }
+  
+  // Clear search
+  void clearSearch() {
+    _searchQuery = '';
+    _filteredNewOrders = [];
     notifyListeners();
   }
 
