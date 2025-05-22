@@ -72,4 +72,39 @@ class ServiceProviderModel {
       'portfolioImages': portfolioImages,
     };
   }
+  
+  // Method to create a copy of this model with updated fields
+  ServiceProviderModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phoneNumber,
+    String? category,
+    String? description,
+    double? rating,
+    int? reviewCount,
+    List<String>? services,
+    String? profileImageUrl,
+    String? address,
+    bool? isAvailable,
+    Map<String, dynamic>? businessHours,
+    List<String>? portfolioImages,
+  }) {
+    return ServiceProviderModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      services: services ?? this.services,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      address: address ?? this.address,
+      isAvailable: isAvailable ?? this.isAvailable,
+      businessHours: businessHours ?? this.businessHours,
+      portfolioImages: portfolioImages ?? this.portfolioImages,
+    );
+  }
 }

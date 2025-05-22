@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -33,8 +34,19 @@ class ServiceProviderProvider extends ChangeNotifier {
   ServiceProviderModel? get currentServiceProvider => _currentServiceProvider;
   bool get currentIsFavorite => _currentIsFavorite;
   
+  // Stream subscription for real-time availability updates
+  StreamSubscription<QuerySnapshot>? _availabilitySubscription;
+  
   ServiceProviderProvider() {
     _init();
+    // Set up real-time listener for service provider availability changes
+    _setupAvailabilityListener();
+  }
+  
+  @override
+  void dispose() {
+    _availabilitySubscription?.cancel();
+    super.dispose();
   }
   
   void _init() async {
@@ -406,6 +418,9 @@ class ServiceProviderProvider extends ChangeNotifier {
         'serviceProviderDetails.isAvailable': _isAvailable,
       });
       
+      // Update all instances of this service provider in all lists
+      _updateServiceProviderAvailabilityInAllLists(user.uid, _isAvailable);
+      
       notifyListeners();
       _setLoading(false);
       return true;
@@ -413,6 +428,73 @@ class ServiceProviderProvider extends ChangeNotifier {
       _setError('Failed to update availability: $e');
       return false;
     }
+  }
+  
+  // Helper method to update a service provider's availability in all lists
+  void _updateServiceProviderAvailabilityInAllLists(String serviceProviderId, bool isAvailable) {
+    // Update in main service providers list
+    for (int i = 0; i < _serviceProviders.length; i++) {
+      if (_serviceProviders[i].id == serviceProviderId) {
+        _serviceProviders[i] = _serviceProviders[i].copyWith(isAvailable: isAvailable);
+      }
+    }
+    
+    // Update in top service providers list
+    for (int i = 0; i < _topServiceProviders.length; i++) {
+      if (_topServiceProviders[i].id == serviceProviderId) {
+        _topServiceProviders[i] = _topServiceProviders[i].copyWith(isAvailable: isAvailable);
+      }
+    }
+    
+    // Update in search results
+    for (int i = 0; i < _searchResults.length; i++) {
+      if (_searchResults[i].id == serviceProviderId) {
+        _searchResults[i] = _searchResults[i].copyWith(isAvailable: isAvailable);
+      }
+    }
+    
+    // Update in favorites
+    for (int i = 0; i < _favoriteServiceProviders.length; i++) {
+      if (_favoriteServiceProviders[i].id == serviceProviderId) {
+        _favoriteServiceProviders[i] = _favoriteServiceProviders[i].copyWith(isAvailable: isAvailable);
+      }
+    }
+    
+    // Update current service provider if it's the same one
+    if (_currentServiceProvider != null && _currentServiceProvider!.id == serviceProviderId) {
+      _currentServiceProvider = _currentServiceProvider!.copyWith(isAvailable: isAvailable);
+    }
+    
+    // Notify listeners to update UI
+    notifyListeners();
+  }
+  
+  // Set up real-time listener for service provider availability changes
+  void _setupAvailabilityListener() {
+    // Cancel any existing subscription
+    _availabilitySubscription?.cancel();
+    
+    // Set up a new subscription to listen for changes to any service provider's availability
+    _availabilitySubscription = _firestore
+        .collection('users')
+        .where('userType', isEqualTo: 'service_provider')
+        .snapshots(includeMetadataChanges: true)
+        .listen((snapshot) {
+      // Process each changed document
+      for (var change in snapshot.docChanges) {
+        final doc = change.doc;
+        final data = doc.data() as Map<String, dynamic>;
+        final serviceProviderDetails = data['serviceProviderDetails'] as Map<String, dynamic>?;
+        
+        if (serviceProviderDetails != null && serviceProviderDetails.containsKey('isAvailable')) {
+          final isAvailable = serviceProviderDetails['isAvailable'] as bool;
+          // Update this service provider in all lists
+          _updateServiceProviderAvailabilityInAllLists(doc.id, isAvailable);
+        }
+      }
+    }, onError: (e) {
+      print('Error in real-time availability listener: $e');
+    });
   }
   
   // Favorite service providers functionality

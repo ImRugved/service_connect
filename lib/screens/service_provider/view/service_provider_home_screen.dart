@@ -264,16 +264,21 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
 
                       // Recent orders section
                       Container(
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        padding: EdgeInsets.symmetric(
+                          vertical: 16.h,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Direct orders display
-                            Text(
-                              'New Orders (${orderProvider.newOrders.length})',
-                              style: AppTextStyles.heading4.copyWith(
-                                color: AppColors.primaryBlue,
-                                fontWeight: FontWeight.bold,
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10.w),
+                              child: Text(
+                                'New Orders (${orderProvider.newOrders.length})',
+                                style: AppTextStyles.heading4.copyWith(
+                                  color: AppColors.primaryBlue,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             SizedBox(height: 8.h),
