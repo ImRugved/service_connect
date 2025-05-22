@@ -201,46 +201,46 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
                         ),
                       ),
 
-                      // Quick stats
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: Row(
-                          children: [
-                            _buildStatCard(
-                              icon: Icons.calendar_today,
-                              title: 'Today',
-                              value: '0',
-                              color: AppColors.primaryBlue,
-                            ),
-                            SizedBox(width: 16.w),
-                            _buildStatCard(
-                              icon: Icons.star,
-                              title: 'Rating',
-                              value: '0.0',
-                              color: AppColors.warning,
-                            ),
-                            SizedBox(width: 16.w),
-                            _buildStatCard(
-                              icon: Icons.people,
-                              title: 'Customers',
-                              value: '0',
-                              color: AppColors.success,
-                            ),
-                          ],
-                        ),
-                      ),
+                      // // Quick stats
+                      // Padding(
+                      //   padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      //   child: Row(
+                      //     children: [
+                      //       _buildStatCard(
+                      //         icon: Icons.calendar_today,
+                      //         title: 'Today',
+                      //         value: '0',
+                      //         color: AppColors.primaryBlue,
+                      //       ),
+                      //       SizedBox(width: 16.w),
+                      //       _buildStatCard(
+                      //         icon: Icons.star,
+                      //         title: 'Rating',
+                      //         value: '0.0',
+                      //         color: AppColors.warning,
+                      //       ),
+                      //       SizedBox(width: 16.w),
+                      //       _buildStatCard(
+                      //         icon: Icons.people,
+                      //         title: 'Customers',
+                      //         value: '0',
+                      //         color: AppColors.success,
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
 
-                      SizedBox(height: 24.h),
+                      // SizedBox(height: 24.h),
 
                       // Quick actions
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: Text(
-                          'Quick Actions',
-                          style: AppTextStyles.heading3,
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
+                      // Padding(
+                      //   padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      //   child: Text(
+                      //     'Quick Actions',
+                      //     style: AppTextStyles.heading3,
+                      //   ),
+                      // ),
+                      // SizedBox(height: 16.h),
 
                       // Action buttons
                       Padding(
@@ -321,6 +321,9 @@ class _ServiceProviderHomeScreenState extends State<ServiceProviderHomeScreen>
                                     ),
                                   )
                                 : Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10.w,
+                                    ),
                                     height: 200.h,
                                     child: ListView.builder(
                                       padding: EdgeInsets.only(top: 8.h),

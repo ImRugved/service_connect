@@ -29,6 +29,34 @@ class OrderProvider extends ChangeNotifier {
   OrderProvider() {
     // Check availability status on initialization
     _checkAvailabilityStatus();
+    
+    // Auto-initialize real-time listeners if user is logged in
+    _initializeListeners();
+  }
+  
+  // Initialize appropriate listeners based on current user
+  Future<void> _initializeListeners() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+      
+      // Get user type to determine which listener to set up
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+      
+      final userData = userDoc.data()!;
+      final userType = userData['userType'] as String?;
+      
+      if (userType == 'service_provider') {
+        print('Auto-initializing service provider order listener');
+        fetchServiceProviderOrders();
+      } else {
+        print('Auto-initializing customer order listener');
+        fetchCustomerOrders();
+      }
+    } catch (e) {
+      print('Error initializing listeners: $e');
+    }
   }
 
   // Check the current availability status of the service provider
@@ -252,22 +280,24 @@ class OrderProvider extends ChangeNotifier {
   }
 
   // Set up real-time listener for orders
-
   void _setupOrdersListener(String serviceProviderId) {
     // Cancel any existing subscription
     _ordersSubscription?.cancel();
 
-    print(
-        'Setting up real-time listener for service provider: $serviceProviderId');
+    print('Setting up real-time listener for service provider: $serviceProviderId');
 
-    // Set up a new subscription
+    // Set up a new subscription with includeMetadataChanges for faster updates
     _ordersSubscription = _firestore
         .collection('orders')
         .where('serviceProviderId', isEqualTo: serviceProviderId)
         .orderBy('createdAt', descending: true)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .listen((snapshot) {
       print('Real-time update received: ${snapshot.docs.length} orders');
+      
+      // Check if this is a local event or server event
+      final source = snapshot.metadata.isFromCache ? 'local cache' : 'server';
+      print('Data came from $source');
 
       // Process the changes
       final orders = snapshot.docs.map((doc) {

@@ -27,7 +27,10 @@ class _CategoryServiceProvidersScreenState
   @override
   void initState() {
     super.initState();
-    _loadServiceProviders();
+    // Use addPostFrameCallback to avoid calling setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadServiceProviders();
+    });
   }
 
   Future<void> _loadServiceProviders() async {
